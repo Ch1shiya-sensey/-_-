@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+/* Copyright (c) 2025 by Puneet | Techartist (https://codepen.io/VoXelo/pen/QwWzwgQ) */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  #container {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(180deg,
+        #00050a 0%,
+        #000a14 50%,
+        #001020 100%
+      );
+    overflow: hidden;
+  }
+  
+  .glow {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    background: radial-gradient(circle at 50% 50%,
+        rgba(0, 100, 180, 0.02) 0%,
+        rgba(30, 0, 100, 0.03) 50%,
+        transparent 75%
+      );
+    mix-blend-mode: screen;
+    opacity: 0.5;
+  }
+  
+  
+  #patternName {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    font-family: sans-serif;
+    font-size: 16px;
+    pointer-events: none;
+    z-index: 100;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    text-align: center;
+    background-color: rgba(0,0,0,0.4);
+    padding: 8px 18px;
+    border-radius: 25px;
+    text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+  }
+  
+  #instructions {
+    position: fixed;
+    bottom: 15px;
+    left: 15px;
+    color: rgba(255, 255, 255, 0.7);
+    font-family: sans-serif;
+    font-size: 12px;
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 5px 10px;
+    border-radius: 3px;
+    z-index: 100;
+    pointer-events: none;
+    line-height: 1.4;
+  }
+/* ---------- Overlay: envelope + FOR YOU + button ---------- */
+#overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 26px;
+    pointer-events: none;
+    font-family: 'Courier New', monospace;
+}
+#overlay > * { pointer-events: auto; }
+
+.envelope-wrap {
+    position: relative;
+    width: min(70vw, 340px);
+    aspect-ratio: 3 / 2;
+    cursor: pointer;
+}
+.envelope {
+    position: absolute;
+    inset: 0;
+    border: 2px solid rgba(255, 210, 150, 0.85);
+    background: rgba(20, 8, 35, 0.75);
+    box-shadow: 0 0 18px rgba(255, 170, 90, 0.45), inset 0 0 18px rgba(255, 170, 90, 0.15);
+    border-radius: 4px;
+    z-index: 1;
+}
+.envelope::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(to bottom right, transparent 49.5%, rgba(255, 210, 150, 0.85) 50%, transparent 50.5%),
+        linear-gradient(to bottom left, transparent 49.5%, rgba(255, 210, 150, 0.85) 50%, transparent 50.5%);
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+    pointer-events: none;
+}
+.flap {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 55%;
+    transform-origin: top center;
+    transition: transform 0.9s ease, opacity 0.9s ease;
+    background: rgba(40, 14, 60, 0.9);
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+    border-top: 2px solid rgba(255, 210, 150, 0.85);
+    z-index: 2;
+}
+.envelope-wrap.open .flap { transform: rotateX(180deg); opacity: 0; }
+
+.heart {
+    position: absolute;
+    left: 50%;
+    top: 55%;
+    transform: translate(-50%, -50%);
+    font-size: 26px;
+    color: #ff5c9e;
+    text-shadow: 0 0 10px #ff5c9e, 0 0 22px #ff2e7e;
+    animation: beat 1.4s ease-in-out infinite;
+    z-index: 3;
+    transition: opacity 0.5s ease;
+}
+.envelope-wrap.open .heart { opacity: 0; }
+@keyframes beat {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    15%      { transform: translate(-50%, -50%) scale(1.25); }
+    30%      { transform: translate(-50%, -50%) scale(1); }
+}
+
+.letter {
+    position: absolute;
+    left: 8%;
+    width: 84%;
+    top: 10%;
+    height: 80%;
+    background: #fff5e6;
+    color: #3a1a2a;
+    padding: 16px;
+    font-size: 14px;
+    line-height: 1.6;
+    border-radius: 4px;
+    opacity: 0;
+    transform: translateY(20%);
+    transition: all 1s ease 0.5s;
+    z-index: 1;
+    overflow: auto;
+}
+.envelope-wrap.open .letter { opacity: 1; transform: translateY(-40%); }
+
+.title {
+    font-size: clamp(28px, 6vw, 46px);
+    font-weight: bold;
+    letter-spacing: 6px;
+    color: #ffd6e8;
+    text-shadow: 0 0 6px #ff5c9e, 0 0 18px #ff2e7e;
+    animation: glow 2.5s ease-in-out infinite alternate;
+}
+@keyframes glow {
+    from { text-shadow: 0 0 6px #ff5c9e, 0 0 14px #ff2e7e; }
+    to   { text-shadow: 0 0 12px #ff8fc0, 0 0 30px #ff2e7e; }
+}
+
+#musicButton {
+    background: linear-gradient(90deg, #ff8a3d, #ff5c7a);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 12px 26px;
+    margin: 0;
+    font-family: inherit;
+    font-size: 14px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    box-shadow: 0 0 14px rgba(255, 130, 80, 0.5);
+    transition: transform 0.25s ease, box-shadow 0.25s ease, opacity 0.5s ease;
+}
+#musicButton:hover { transform: translateY(-2px); box-shadow: 0 0 22px rgba(255, 130, 80, 0.8); }
+#musicButton.hidden { opacity: 0; pointer-events: none; }
+
+#hint {
+    font-size: 12px;
+    opacity: 0.6;
+    letter-spacing: 1px;
+    min-height: 1em;
+    color: #fff;
+}
+
+/* ===== Match the reference video: dark purple sky, sparkly envelope, bold FOR YOU ===== */
+body.idle #container, body.idle .glow, body.idle #patternName, body.idle #instructions { opacity: 0; transition: opacity 1.2s ease; }
+#container, .glow, #patternName, #instructions { transition: opacity 1.2s ease; }
+body { background: #0a0413; }
+#overlay {
+    background: radial-gradient(ellipse at 50% 45%, #2a0f3a 0%, #120620 55%, #05020a 100%);
+    gap: 18px;
+}
+#overlay::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+        radial-gradient(rgba(255,255,255,0.55) 1px, transparent 1.2px),
+        radial-gradient(rgba(255,190,220,0.35) 1px, transparent 1.2px);
+    background-size: 37px 41px, 53px 47px;
+    background-position: 0 0, 17px 23px;
+    opacity: 0.45;
+    pointer-events: none;
+}
+#overlay.gone { opacity: 0; transition: opacity 1.2s ease; pointer-events: none; }
+#overlay { transition: opacity 1.2s ease; }
+
+.ev-wrap {
+    position: relative;
+    width: min(74vw, 420px);
+    aspect-ratio: 1.6 / 1;
+    cursor: pointer;
+}
+.ev-body {
+    position: absolute;
+    inset: 0;
+    border: 2px solid #f3dcc4;
+    border-radius: 3px;
+    background-color: rgba(70, 20, 70, 0.55);
+    background-image:
+        radial-gradient(rgba(255,215,230,0.85) 1px, transparent 1.4px),
+        radial-gradient(rgba(255,255,255,0.45) 0.8px, transparent 1.2px);
+    background-size: 9px 11px, 13px 7px;
+    box-shadow: 0 0 14px rgba(255, 210, 170, 0.35);
+}
+.ev-lines {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+.ev-lines path {
+    stroke: #f3dcc4;
+    stroke-width: 2;
+    fill: none;
+    vector-effect: non-scaling-stroke;
+    transition: opacity 0.8s ease;
+}
+.ev-heart {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: clamp(18px, 3.4vw, 28px);
+    color: #ffb3d9;
+    text-shadow: 0 0 8px #ff7fbf;
+    animation: beat 1.4s ease-in-out infinite;
+    transition: opacity 0.6s ease;
+}
+.ev-word {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 66%;
+    text-align: center;
+    font-family: "Arial Rounded MT Bold", "Arial Black", Verdana, sans-serif;
+    font-weight: 900;
+    font-size: clamp(18px, 4.2vw, 34px);
+    letter-spacing: 2px;
+    color: #e6eeff;
+    text-shadow: 0 2px 0 rgba(0,0,0,0.25);
+    transition: opacity 0.6s ease;
+}
+.ev-letter {
+    position: absolute;
+    left: 8%;
+    width: 84%;
+    top: 8%;
+    height: 84%;
+    background: #fff5e6;
+    color: #3a1a2a;
+    padding: 14px;
+    font-family: Georgia, serif;
+    font-size: 13px;
+    line-height: 1.6;
+    border-radius: 3px;
+    opacity: 0;
+    transform: translateY(40%);
+    transition: all 1s ease 0.6s;
+    overflow: auto;
+}
+.ev-wrap.open .ev-lines .top { opacity: 0; }
+.ev-wrap.open .ev-heart, .ev-wrap.open .ev-word { opacity: 0; }
+.ev-wrap.open .ev-letter { opacity: 1; transform: translateY(-14%); }
+#musicButton { font-size: 12px; padding: 9px 20px; }
+#overlay.revealed { background: none; }
+#overlay.revealed::before { display: none; }
+.ev-letter { pointer-events: none; }
+.ev-wrap.open .ev-letter { pointer-events: auto; }
+.ev-word { font-size: clamp(24px, 5.6vw, 42px); top: 64%; text-shadow: 0 0 6px rgba(255,255,255,0.35); }
+.ev-heart { font-size: clamp(26px, 5vw, 38px); }
+.ev-lines path { stroke-width: 2.6; }
+
+/* ===== Video look: purple sky, particles form the scene, no DOM envelope ===== */
+#container { background: radial-gradient(ellipse at 50% 40%, #2b0f3a 0%, #120620 60%, #05020a 100%) !important; }
+body.idle #container, body.idle .glow { opacity: 1; }
+#patternName, #instructions { display: none; }
+#overlay { background: none !important; justify-content: flex-end; padding-bottom: 12vh; }
+#overlay::before { display: none; }
+#overlay.revealed { background: none; }
+
+</style>
+    
+    <style>
+  html, body {
+    width: 100%;
+    height: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    margin: 0;
+    overflow: hidden;
+    background: #0a0413;
+  }
+  #container, .glow, #overlay {
+    width: 100%;
+    height: 100%;
+    min-height: 100dvh;
+  }
+  #musicButton {
+    position: relative;
+    color: #fff;
+    background: linear-gradient(135deg, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0.10) 45%, rgba(255,190,220,0.18) 100%);
+    backdrop-filter: blur(14px) saturate(180%);
+    -webkit-backdrop-filter: blur(14px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.45);
+    border-radius: 999px;
+    padding: 14px 34px;
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 3px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.35);
+    box-shadow:
+      inset 0 1px 1px rgba(255,255,255,0.7),
+      inset 0 -2px 6px rgba(255,255,255,0.15),
+      0 8px 24px rgba(0,0,0,0.3),
+      0 0 22px rgba(255,150,200,0.3);
+    overflow: hidden;
+  }
+  #musicButton::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 8%;
+    right: 8%;
+    height: 50%;
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0));
+    pointer-events: none;
+  }
+  #musicButton:hover {
+    transform: translateY(-2px);
+    background: linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.16) 45%, rgba(255,200,230,0.26) 100%);
+    box-shadow:
+      inset 0 1px 1px rgba(255,255,255,0.8),
+      inset 0 -2px 6px rgba(255,255,255,0.2),
+      0 10px 28px rgba(0,0,0,0.3),
+      0 0 30px rgba(255,150,200,0.45);
+  }
+  #musicButton:active { transform: scale(0.97); }
+  #hint { color: #fff; }
+  body, #container, canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
+  #musicButton {
+    background: transparent !important;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: 1px solid rgba(255, 240, 246, 0.85);
+    border-radius: 2px;
+    padding: 12px 40px;
+    color: #fff5fa;
+    letter-spacing: 6px;
+    font-weight: normal;
+    box-shadow: 0 0 12px rgba(255, 160, 210, 0.25), inset 0 0 8px rgba(255, 160, 210, 0.12);
+    text-shadow: 0 0 6px rgba(255, 190, 220, 0.6);
+  }
+  #musicButton::before { display: none; }
+  #musicButton:hover {
+    transform: none;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-color: #fff;
+    box-shadow: 0 0 18px rgba(255, 160, 210, 0.45);
+  }
+</style>
+    <title>For You</title>
+</head>
+<body class="idle">
+<div id="container"></div>
+<div class="glow"></div>
+<div id="patternName">ARISE</div>
+<div id="instructions">My imagination<br>Click/Tap to change!</div>
+
+<div id="overlay">
+    <button id="musicButton">OPEN</button>
+    <div id="hint">Click to open</div>
+</div>
+
+<audio id="bgMusic" loop preload="auto">
+    <source src="edit audio.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+    const musicButton = document.getElementById('musicButton');
+    const hint = document.getElementById('hint');
+    const bgMusic = document.getElementById('bgMusic');
+    const overlay = document.getElementById('overlay');
+    let opened = false;
+
+    function openShow() {
+        if (opened) return;
+        opened = true;
+        musicButton.classList.add('hidden');
+        hint.textContent = '';
+        document.body.classList.remove('idle');
+        bgMusic.volume = 0.7;
+        bgMusic.play().catch(() => {});
+        if (window.startShow) window.startShow();
+    }
+
+    musicButton.addEventListener('click', openShow);
+</script>
+<script type="module">
+import * as THREE from "https://esm.sh/three";
+import { EffectComposer } from "https://esm.sh/three/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "https://esm.sh/three/examples/jsm/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "https://esm.sh/three/examples/jsm/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "https://esm.sh/three/examples/jsm/postprocessing/OutputPass.js";
+
+let scene, camera, renderer, particles, stars;
+let composer;
+let time = 0;
+let currentPattern = 0;
+let transitionProgress = 0;
+let isTransitioning = false;
+const screenMouse = new THREE.Vector2(10000, 10000);
+const worldMouse = new THREE.Vector3();
+const lastWorldMouse = new THREE.Vector3();
+
+const particleCount = 25000;
+const starCount = 6000;
+let transitionSpeed = 0.015;
+const patternNames = ["Cosmic Sphere", "Spiral Nebula", "Quantum Helix", "Stardust Grid", "Celestial Torus"];
+
+function createSphere(i, count) { const t = i / count; const phi = Math.acos(2 * t - 1); const theta = 2 * Math.PI * (i / count) * Math.sqrt(count); return new THREE.Vector3( Math.sin(phi) * Math.cos(theta) * 30, Math.sin(phi) * Math.sin(theta) * 30, Math.cos(phi) * 30 ); }
+function createSpiral(i, count) { const t = i / count; const numArms = 3; const armIndex = i % numArms; const angleOffset = (2 * Math.PI / numArms) * armIndex; const angle = Math.pow(t, 0.7) * 15 + angleOffset; const radius = t * 40; const height = Math.sin(t * Math.PI * 2) * 5; return new THREE.Vector3( Math.cos(angle) * radius, Math.sin(angle) * radius, height ); }
+function createGrid(i, count) { const sideLength = Math.ceil(Math.cbrt(count)); const spacing = 60 / sideLength; const halfGrid = (sideLength - 1) * spacing / 2; const iz = Math.floor(i / (sideLength * sideLength)); const iy = Math.floor((i % (sideLength * sideLength)) / sideLength); const ix = i % sideLength; if (ix === Math.floor(sideLength/2) && iy === Math.floor(sideLength/2) && iz === Math.floor(sideLength/2) && sideLength % 2 !== 0) { return new THREE.Vector3(spacing * 0.1, spacing * 0.1, spacing * 0.1); } return new THREE.Vector3( ix * spacing - halfGrid, iy * spacing - halfGrid, iz * spacing - halfGrid ); }
+function createHelix(i, count) { const numHelices = 2; const helixIndex = i % numHelices; const t = Math.floor(i / numHelices) / Math.floor(count / numHelices); const angle = t * Math.PI * 10; const radius = 15; const height = (t - 0.5) * 60; const angleOffset = helixIndex * Math.PI; return new THREE.Vector3( Math.cos(angle + angleOffset) * radius, Math.sin(angle + angleOffset) * radius, height ); }
+function createTorus(i, count) { const R = 30; const r = 10; const angle1 = Math.random() * Math.PI * 2; const angle2 = Math.random() * Math.PI * 2; return new THREE.Vector3( (R + r * Math.cos(angle2)) * Math.cos(angle1), (R + r * Math.cos(angle2)) * Math.sin(angle1), r * Math.sin(angle2) ); }
+const patterns = [createSphere, createSpiral, createHelix, createGrid, createTorus];
+
+const colorPalettes = [ [ new THREE.Color(0x0077ff), new THREE.Color(0x00aaff), new THREE.Color(0x44ccff), new THREE.Color(0x0055cc) ], [ new THREE.Color(0x8800cc), new THREE.Color(0xcc00ff), new THREE.Color(0x660099), new THREE.Color(0xaa33ff) ], [ new THREE.Color(0x00cc66), new THREE.Color(0x33ff99), new THREE.Color(0x99ff66), new THREE.Color(0x008844) ], [ new THREE.Color(0xff9900), new THREE.Color(0xffcc33), new THREE.Color(0xff6600), new THREE.Color(0xffaa55) ], [ new THREE.Color(0xff3399), new THREE.Color(0xff66aa), new THREE.Color(0xff0066), new THREE.Color(0xcc0055) ] ];
+
+function createStarfield() {
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(starCount * 3);
+    const colors = new Float32Array(starCount * 3);
+    const starInfo = new Float32Array(starCount);
+    const color = new THREE.Color();
+    const starRadius = 700;
+    for (let i = 0; i < starCount; i++) {
+        const u = Math.random(); const v = Math.random(); const theta = 2 * Math.PI * u; const phi = Math.acos(2 * v - 1);
+        positions[i * 3] = starRadius * Math.sin(phi) * Math.cos(theta); positions[i * 3 + 1] = starRadius * Math.sin(phi) * Math.sin(theta); positions[i * 3 + 2] = starRadius * Math.cos(phi);
+        const rand = Math.random();
+        if (rand < 0.7) { color.setHSL(0, 0, Math.random() * 0.2 + 0.7); } else if (rand < 0.9) { color.setHSL(0.6, 0.7, Math.random() * 0.2 + 0.6); } else { color.setHSL(0.1, 0.7, Math.random() * 0.2 + 0.6); }
+        colors[i * 3] = color.r; colors[i * 3 + 1] = color.g; colors[i * 3 + 2] = color.b;
+        starInfo[i] = Math.random();
+    }
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    geometry.setAttribute('starInfo', new THREE.BufferAttribute(starInfo, 1));
+    const material = new THREE.ShaderMaterial({
+        uniforms: { time: { value: 0 }, pointSize: { value: 1.7 } },
+        vertexShader: `attribute float starInfo; varying vec3 vColor; varying float vStarInfo; uniform float pointSize; void main() { vColor = color; vStarInfo = starInfo; vec4 mvPosition = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mvPosition; gl_PointSize = pointSize * (150.0 / -mvPosition.z); }`,
+        fragmentShader: `uniform float time; varying vec3 vColor; varying float vStarInfo; void main() { vec2 uv = gl_PointCoord - vec2(0.5); float dist = length(uv); if (dist > 0.5) discard; float speed = vStarInfo * 2.0 + 0.5; float offset = vStarInfo * 3.14 * 2.0; float twinkle = sin(time * speed + offset) * 0.2 + 0.8; float alpha = pow(1.0 - dist * 2.0, 1.5); gl_FragColor = vec4(vColor, alpha * twinkle * 0.8); }`,
+        transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, vertexColors: true
+    });
+    const starPoints = new THREE.Points(geometry, material);
+    starPoints.renderOrder = -1; return starPoints;
+}
+
+function createParticleSystem() {
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(particleCount * 3); const colors = new Float32Array(particleCount * 3); const sizes = new Float32Array(particleCount); const indices = new Float32Array(particleCount); const particleTypes = new Float32Array(particleCount);
+    const initialPattern = patterns[0]; const initialPalette = colorPalettes[0];
+    for (let i = 0; i < particleCount; i++) {
+        indices[i] = i; particleTypes[i] = Math.floor(Math.random() * 3); const pos = initialPattern(i, particleCount); positions[i * 3] = pos.x; positions[i * 3 + 1] = pos.y; positions[i * 3 + 2] = pos.z;
+        const colorIndex = Math.floor(Math.random() * initialPalette.length); const baseColor = initialPalette[colorIndex]; const variation = 0.85 + Math.random() * 0.3; const finalColor = baseColor.clone().multiplyScalar(variation); colors[i * 3] = finalColor.r; colors[i * 3 + 1] = finalColor.g; colors[i * 3 + 2] = finalColor.b; sizes[i] = 1.0 + Math.random() * 1.5;
+    }
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3)); geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3)); geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1)); geometry.setAttribute('index', new THREE.BufferAttribute(indices, 1)); geometry.setAttribute('particleType', new THREE.BufferAttribute(particleTypes, 1)); geometry.userData.currentColors = new Float32Array(colors);
+    const material = new THREE.ShaderMaterial({
+        uniforms: { time: { value: 0 }, mousePos: { value: new THREE.Vector3(10000, 10000, 0) }, },
+        vertexShader: `
+            uniform float time; uniform vec3 mousePos; attribute float size; attribute float index; attribute float particleType; varying vec3 vColor; varying float vDistanceToMouse; varying float vType; varying float vIndex;
+            float rand(vec2 co){ return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453); }
+            void main() {
+                vColor = color; vType = particleType; vIndex = index; vec3 pos = position; float T = time * 0.5; float idx = index * 0.01;
+                float noiseFactor1 = sin(idx * 30.0 + T * 15.0) * 0.4 + 0.6; vec3 offset1 = vec3( cos(T * 1.2 + idx * 5.0) * noiseFactor1, sin(T * 0.9 + idx * 6.0) * noiseFactor1, cos(T * 1.1 + idx * 7.0) * noiseFactor1 ) * 0.4;
+                float noiseFactor2 = rand(vec2(idx, idx * 0.5)) * 0.5 + 0.5; float speedFactor = 0.3; vec3 offset2 = vec3( sin(T * speedFactor * 1.3 + idx * 1.1) * noiseFactor2, cos(T * speedFactor * 1.7 + idx * 1.2) * noiseFactor2, sin(T * speedFactor * 1.1 + idx * 1.3) * noiseFactor2 ) * 0.8;
+                pos += offset1 + offset2;
+                vec3 toMouse = mousePos - pos; float dist = length(toMouse); vDistanceToMouse = 0.0; float interactionRadius = 30.0; float falloffStart = 5.0;
+                if (dist < interactionRadius) { float influence = smoothstep(interactionRadius, falloffStart, dist); vec3 repelDir = normalize(pos - mousePos); pos += repelDir * influence * 15.0; vDistanceToMouse = influence; }
+                vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0); gl_Position = projectionMatrix * mvPosition; float perspectiveFactor = 700.0 / -mvPosition.z; gl_PointSize = size * perspectiveFactor * (1.0 + vDistanceToMouse * 0.5);
+            }`,
+        fragmentShader: `
+            uniform float time; varying vec3 vColor; varying float vDistanceToMouse; varying float vType; varying float vIndex;
+            vec3 rgb2hsl( vec3 c ){ vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0); vec4 p = mix( vec4( c.bg, K.wz ), vec4( c.gb, K.xy ), step( c.b, c.g ) ); vec4 q = mix( vec4( p.xyw, c.r ), vec4( c.r, p.yzx ), step( p.x, c.r ) ); float d = q.x - min( q.w, q.y ); float e = 1.0e-10; return vec3( abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x); }
+            vec3 hsl2rgb( vec3 c ){ vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0); vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www); return c.z * mix( K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y ); }
+            void main() {
+                vec2 uv = gl_PointCoord * 2.0 - 1.0; float dist = length(uv); if (dist > 1.0) { discard; } float alpha = 0.0; vec3 baseColor = vColor;
+                vec3 hsl = rgb2hsl(baseColor); float hueShift = sin(time * 0.05 + vIndex * 0.001) * 0.02; hsl.x = fract(hsl.x + hueShift); baseColor = hsl2rgb(hsl); vec3 finalColor = baseColor;
+                if (vType < 0.5) { float core = smoothstep(0.2, 0.15, dist) * 0.9; float glow = pow(max(0.0, 1.0 - dist), 3.0) * 0.5; alpha = core + glow; }
+                else if (vType < 1.5) { float ringWidth = 0.1; float ringCenter = 0.65; float ringShape = exp(-pow(dist - ringCenter, 2.0) / (2.0 * ringWidth * ringWidth)); alpha = smoothstep(0.1, 0.5, ringShape) * 0.8; alpha += smoothstep(0.3, 0.0, dist) * 0.1; }
+                else { float pulse = sin(dist * 5.0 - time * 2.0 + vIndex * 0.1) * 0.1 + 0.9; alpha = pow(max(0.0, 1.0 - dist), 2.5) * pulse * 0.9; }
+                finalColor = mix(finalColor, finalColor * 1.3 + 0.1, vDistanceToMouse * 1.0); alpha *= 0.9; alpha = clamp(alpha, 0.0, 1.0); gl_FragColor = vec4(finalColor * alpha, alpha);
+            }`,
+        transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, vertexColors: true
+    });
+    return new THREE.Points(geometry, material);
+}
+
+function init() {
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 1500);
+    camera.position.z = 100;
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+
+    const container = document.getElementById('container');
+    if (container) {
+      container.appendChild(renderer.domElement);
+    } else {
+      console.error("HTML element with id 'container' not found!");
+      return;
+    }
+
+    stars = createStarfield();
+    scene.add(stars);
+    particles = createParticleSystem();
+    scene.add(particles);
+
+    composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+
+    const bloomPass = new UnrealBloomPass(
+        new THREE.Vector2(window.innerWidth, window.innerHeight),
+        0.45, 0.3, 0.85
+    );
+    composer.addPass(bloomPass);
+
+    const outputPass = new OutputPass();
+    composer.addPass(outputPass);
+
+    window.addEventListener('resize', onWindowResize);
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
+    document.addEventListener('pointercancel', onPointerUp);
+    document.addEventListener('wheel', onWheel, { passive: false });
+    updatePatternName(patternNames[currentPattern], true);
+}
+
+function onWindowResize() {
+    if (!camera || !renderer || !composer) return;
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    composer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+ }
+function updateScreenMouse(clientX, clientY) { screenMouse.x = (clientX / window.innerWidth) * 2 - 1; screenMouse.y = -(clientY / window.innerHeight) * 2 + 1; }
+function onMouseMove(event) { updateScreenMouse(event.clientX, event.clientY); }
+// ----- User control: drag rotates the scene in every direction, pinch/wheel zooms, tap changes pattern -----
+let userRotX = 0, userRotY = 0, userZoom = 1;
+const rotVel = { x: 0, y: 0 };
+const activePointers = new Map();
+let dragMoved = 0, pinchDist = 0;
+const clampNum = (v, a, b) => Math.max(a, Math.min(b, v));
+function pinchDistance() {
+    const pts = [...activePointers.values()];
+    return Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+}
+function onPointerDown(event) {
+    if (event.target.closest('#overlay')) return;
+    activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (activePointers.size === 1) dragMoved = 0;
+    if (activePointers.size === 2) pinchDist = pinchDistance();
+}
+function onPointerMove(event) {
+    updateScreenMouse(event.clientX, event.clientY);
+    if (!activePointers.has(event.pointerId)) return;
+    const prev = activePointers.get(event.pointerId);
+    const dx = event.clientX - prev.x, dy = event.clientY - prev.y;
+    activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (activePointers.size === 1) {
+        dragMoved += Math.abs(dx) + Math.abs(dy);
+        rotVel.y = dx * 0.008;
+        rotVel.x = dy * 0.008;
+        userRotY += rotVel.y;
+        userRotX = clampNum(userRotX + rotVel.x, -1.4, 1.4);
+    } else if (activePointers.size === 2) {
+        const d = pinchDistance();
+        if (pinchDist > 0 && d > 0) userZoom = clampNum(userZoom * (pinchDist / d), 0.5, 2.5);
+        pinchDist = d;
+        dragMoved = 999;
+    }
+}
+function onPointerUp(event) {
+    const wasSingle = activePointers.size === 1;
+    activePointers.delete(event.pointerId);
+    if (activePointers.size === 0 && wasSingle && dragMoved < 8 && !event.target.closest('#overlay')) {
+        if (!showRunning) forcePatternChange();
+    }
+    if (activePointers.size < 2) pinchDist = 0;
+    if (activePointers.size === 0 && dragMoved >= 8) dragMoved = 0;
+}
+function onWheel(event) {
+    event.preventDefault();
+    userZoom = clampNum(userZoom * (event.deltaY > 0 ? 1.08 : 0.92), 0.5, 2.5);
+}
+function onMouseClick(event) { if (event.target.closest('#overlay')) return; event.preventDefault(); forcePatternChange(); }
+function onTouchStart(event) { if (event.target.closest('#overlay')) return; event.preventDefault(); if (event.touches.length > 0) { updateScreenMouse(event.touches[0].clientX, event.touches[0].clientY); } forcePatternChange(); }
+function onTouchMove(event) { event.preventDefault(); if (event.touches.length > 0) { updateScreenMouse(event.touches[0].clientX, event.touches[0].clientY); } }
+
+function forcePatternChange() { if (showRunning) return; if (isTransitioning) { completeCurrentTransition(); } const nextPattern = (currentPattern + 1) % patterns.length; transitionToPattern(nextPattern); updatePatternName(patternNames[nextPattern]); }
+function completeCurrentTransition() {
+    if (!isTransitioning || !particles || !particles.userData.toPositions || !particles.userData.toColors) { isTransitioning = false; transitionProgress = 0; delete particles?.userData?.fromPositions; delete particles?.userData?.toPositions; delete particles?.userData?.fromColors; delete particles?.userData?.toColors; return; }
+    const positions = particles.geometry.attributes.position.array;
+    const colors = particles.geometry.attributes.color.array;
+    positions.set(particles.userData.toPositions);
+    colors.set(particles.userData.toColors);
+    particles.geometry.userData.currentColors = new Float32Array(particles.userData.toColors);
+    particles.geometry.attributes.position.needsUpdate = true;
+    particles.geometry.attributes.color.needsUpdate = true;
+    currentPattern = particles.userData.targetPattern;
+    delete particles.userData.fromPositions; delete particles.userData.toPositions; delete particles.userData.fromColors; delete particles.userData.toColors;
+    isTransitioning = false;
+    transitionProgress = 0;
+ }
+function updatePatternName(name, instant = false) { const el = document.getElementById('patternName'); if (!el) return; el.textContent = name; if (instant) { el.style.transition = 'none'; el.style.opacity = '1'; } else { el.style.transition = 'opacity 0.5s ease'; el.style.opacity = '1'; setTimeout(() => { if(el) el.style.opacity = '0'; }, 2500); } }
+function transitionToPattern(newPattern) {
+    if (!particles) return;
+    isTransitioning = true;
+    const posAttr = particles.geometry.attributes.position;
+    const colAttr = particles.geometry.attributes.color;
+    const curPos = new Float32Array(posAttr.array);
+    const curCol = particles.geometry.userData.currentColors ? new Float32Array(particles.geometry.userData.currentColors) : new Float32Array(colAttr.array);
+    const newPos = new Float32Array(curPos.length);
+    const patternFn = patterns[newPattern];
+    for (let i = 0; i < particleCount; i++) { const p = patternFn(i, particleCount); newPos[i * 3] = p.x; newPos[i * 3 + 1] = p.y; newPos[i * 3 + 2] = p.z; }
+    const newCol = new Float32Array(curCol.length);
+    const palette = colorPalettes[newPattern];
+    for (let i = 0; i < particleCount; i++) { const idx = Math.floor(Math.random() * palette.length); const base = palette[idx]; const variation = 0.85 + Math.random() * 0.3; const final = base.clone().multiplyScalar(variation); newCol[i * 3] = final.r; newCol[i * 3 + 1] = final.g; newCol[i * 3 + 2] = final.b; }
+    particles.userData.fromPositions = curPos; particles.userData.toPositions = newPos; particles.userData.fromColors = curCol; particles.userData.toColors = newCol; particles.userData.targetPattern = newPattern;
+    transitionProgress = 0;
+ }
+
+const clock = new THREE.Clock();
+
+function animate() {
+    requestAnimationFrame(animate);
+    if (!renderer || !composer || !camera || !scene) return;
+
+    const deltaTime = clock.getDelta();
+    time += deltaTime;
+
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(screenMouse, camera);
+    const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+    const intersectPoint = new THREE.Vector3();
+    if (raycaster.ray.intersectPlane(plane, intersectPoint)) {
+       if(screenMouse.x < 9000) {
+           lastWorldMouse.copy(worldMouse);
+           worldMouse.lerp(intersectPoint, 0.1);
+       }
+    }
+
+    if (stars && stars.material.uniforms.time) { stars.material.uniforms.time.value = time; }
+    if (particles && particles.material.uniforms.time && particles.material.uniforms.mousePos) {
+        particles.material.uniforms.time.value = time;
+        particles.material.uniforms.mousePos.value.copy(worldMouse);
+    }
+
+    if (isTransitioning && particles?.userData.fromPositions && particles.userData.toPositions && particles.userData.fromColors && particles.userData.toColors) {
+        transitionProgress += transitionSpeed * Math.min(deltaTime, 0.1) * 60;
+        if (transitionProgress >= 1.0) {
+            transitionProgress = 1.0;
+            completeCurrentTransition();
+        } else {
+            const positions = particles.geometry.attributes.position.array;
+            const colors = particles.geometry.attributes.color.array;
+            const fromPos = particles.userData.fromPositions;
+            const toPos = particles.userData.toPositions;
+            const fromCol = particles.userData.fromColors;
+            const toCol = particles.userData.toColors;
+            const t = transitionProgress;
+            const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+            if (fromPos.length === positions.length && toPos.length === positions.length && fromCol.length === colors.length && toCol.length === colors.length) {
+                 for (let i = 0; i < positions.length / 3; i++) {
+                   const index = i * 3;
+                   positions[index] = fromPos[index] * (1 - ease) + toPos[index] * ease;
+                   positions[index + 1] = fromPos[index + 1] * (1 - ease) + toPos[index + 1] * ease;
+                   positions[index + 2] = fromPos[index + 2] * (1 - ease) + toPos[index + 2] * ease;
+                   colors[index] = fromCol[index] * (1 - ease) + toCol[index] * ease;
+                   colors[index + 1] = fromCol[index + 1] * (1 - ease) + toCol[index + 1] * ease;
+                   colors[index + 2] = fromCol[index + 2] * (1 - ease) + toCol[index + 2] * ease;
+                }
+                particles.geometry.attributes.position.needsUpdate = true;
+                particles.geometry.attributes.color.needsUpdate = true;
+                particles.geometry.userData.currentColors = new Float32Array(colors);
+            } else {
+                console.error("Transition data length mismatch during interpolation!");
+                completeCurrentTransition();
+            }
+        }
+    }
+
+    const baseRadius = 100;
+    const radiusVariation = Math.sin(time * 0.1) * 15;
+    const phoneZoom = Math.max(1, 0.9 / camera.aspect);
+    const cameraRadius = (baseRadius + radiusVariation) * phoneZoom * userZoom;
+    const angleX = time * 0.08;
+    const angleY = time * 0.06;
+    camera.position.x = Math.cos(angleX) * cameraRadius;
+    camera.position.z = Math.sin(angleX) * cameraRadius;
+    camera.position.y = Math.sin(angleY) * 35 + 5;
+    camera.lookAt(0, 0, 0);
+
+    if (activePointers.size === 0) {
+        userRotY += rotVel.y;
+        userRotX = clampNum(userRotX + rotVel.x, -1.4, 1.4);
+        rotVel.x *= 0.94; rotVel.y *= 0.94;
+    }
+    if (particles) { particles.rotation.set(userRotX, userRotY, 0); }
+    if (stars) { stars.rotation.set(userRotX * 0.5, userRotY * 0.5, 0); }
+
+    composer.render(deltaTime);
+}
+
+/* ===== Show sequence (matches the video) ===== */
+let showStarted = false;
+let camLock = 0;
+let showRunning = false;
+const TEXT_SCALE = 0.09;
+const SCRIPT_FONT = "'Segoe Script', 'Brush Script MT', 'Lucida Handwriting', cursive";
+const TEXT_COLORS = [0xfff0f6, 0xffb3d9, 0xff7fbf, 0xffffff];
+const GOLD_COLORS = [0xb8784a, 0xd9a06a, 0xe8c08a, 0x9a4a6a];
+
+const sleepMs = (ms) => new Promise((r) => setTimeout(r, ms));
+const waitForMorph = async () => { while (isTransitioning) await sleepMs(100); };
+
+function colorsFromList(list) {
+    const cols = list.map((h) => new THREE.Color(h));
+    const out = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++) {
+        const c = cols[Math.floor(Math.random() * cols.length)].clone().multiplyScalar(0.85 + Math.random() * 0.3);
+        out[i * 3] = c.r; out[i * 3 + 1] = c.g; out[i * 3 + 2] = c.b;
+    }
+    return out;
+}
+function colorsFromPalette(idx) { return colorsFromList(colorPalettes[idx].map((c) => c.getHex())); }
+
+// Real envelope opening: the flap rotates around its top edge (hinge) and rises upward
+function openEnvelopeAnimated(ms) {
+    const N = particleCount;
+    const shape = samplePoints((g) => {
+        g.lineWidth = 7;
+        g.strokeRect(150, 90, 600, 320);
+        g.beginPath(); g.moveTo(150, 90); g.lineTo(450, 260); g.lineTo(750, 90); g.stroke();
+        g.beginPath(); g.moveTo(150, 410); g.lineTo(330, 290); g.moveTo(750, 410); g.lineTo(570, 290); g.stroke();
+    });
+    const words = samplePoints((g) => {
+        g.font = 'bold 84px Arial, sans-serif'; g.fillText('FOR YOU', 450, 350);
+        g.font = '60px Arial, sans-serif'; g.fillText('♥', 450, 240);
+    });
+    const yh = 160 * TEXT_SCALE;                 // hinge = top edge of the flap, in world units
+    const nShape = Math.floor(N * 0.7);
+    const base = new Float32Array(N * 3);
+    const flap = new Uint8Array(N);
+    const colArr = new Float32Array(N * 3);
+    const goldCols = colorsFromList(GOLD_COLORS);
+    const ivoryCols = colorsFromList([0xfffff0, 0xfffdf0, 0xf8f4e3]);
+    const inFlap = (x, y) => {
+        const cx = x / TEXT_SCALE + 450, cy = 250 - y / TEXT_SCALE;
+        return cy >= 85 && cy <= 265 && Math.abs(cx - 450) <= (260 - cy) * (300 / 170) + 3;
+    };
+    for (let i = 0; i < N; i++) {
+        const isShape = i < nShape;
+        const pts = isShape ? shape : words;
+        const p = pts[Math.floor(Math.random() * pts.length)];
+        base[i * 3] = p[0] + (Math.random() - 0.5) * 0.3;
+        base[i * 3 + 1] = p[1] + (Math.random() - 0.5) * 0.3;
+        base[i * 3 + 2] = (Math.random() - 0.5) * 1.5;
+        flap[i] = isShape && inFlap(p[0], p[1]) ? 1 : 0;
+        const src = isShape ? goldCols : ivoryCols;
+        colArr[i * 3] = src[i * 3]; colArr[i * 3 + 1] = src[i * 3 + 1]; colArr[i * 3 + 2] = src[i * 3 + 2];
+    }
+    applySize(0.4);
+    applyNow(base, colArr);
+    return new Promise((resolve) => {
+        const arr = particles.geometry.attributes.position.array;
+        const start = performance.now();
+        const frame = (now) => {
+            const t = Math.min(1, (now - start) / ms);
+            const e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+            const th = e * Math.PI, c = Math.cos(th), s = Math.sin(th);
+            for (let i = 0; i < N; i++) {
+                if (!flap[i]) continue;
+                const x0 = base[i * 3], y0 = base[i * 3 + 1], z0 = base[i * 3 + 2];
+                const d = y0 - yh;
+                arr[i * 3] = x0;
+                arr[i * 3 + 1] = yh + d * c - z0 * s;
+                arr[i * 3 + 2] = d * s + z0 * c;
+            }
+            particles.geometry.attributes.position.needsUpdate = true;
+            if (t < 1) requestAnimationFrame(frame); else resolve();
+        };
+        requestAnimationFrame(frame);
+    });
+}
+
+// Each letter is sampled once and floats in its own place in the air, mixed with bubbles
+let letterCache = null;
+function letterSets() {
+    if (letterCache) return letterCache;
+    const S = TEXT_SCALE * 0.8;
+    letterCache = ALPHABET.split('').map((ch) => {
+        const W = 200, H = 200;
+        const c = document.createElement('canvas');
+        c.width = W; c.height = H;
+        const g = c.getContext('2d');
+        g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
+        g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.font = 'bold 150px Arial, sans-serif';
+        g.fillText(ch, 100, 100);
+        const d = g.getImageData(0, 0, W, H).data;
+        const pts = [];
+        for (let y = 0; y < H; y += 2) {
+            for (let x = 0; x < W; x += 2) {
+                if (d[(y * W + x) * 4] > 128) pts.push([(x - 100) * S, -(y - 100) * S]);
+            }
+        }
+        if (pts.length === 0) pts.push([0, 0]);
+        return pts;
+    });
+    return letterCache;
+}
+function alphabetBurstV2() {
+    const sets = letterSets();
+    const centers = sets.map(() => {
+        const u = Math.random() * 2 - 1, th = Math.random() * Math.PI * 2, s = Math.sqrt(1 - u * u);
+        const r = 25 + Math.random() * 50;
+        return [r * s * Math.cos(th), r * s * Math.sin(th), r * u];
+    });
+    const letterCols = colorsFromList(TEXT_COLORS);
+    const bubbleCols = colorsFromPalette(4);
+    const pos = new Float32Array(particleCount * 3);
+    const col = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++) {
+        if (Math.random() < 0.8) {
+            const li = i % sets.length;
+            const pts = sets[li];
+            const p = pts[Math.floor(Math.random() * pts.length)];
+            const c = centers[li];
+            pos[i * 3] = c[0] + p[0] + (Math.random() - 0.5) * 0.4;
+            pos[i * 3 + 1] = c[1] + p[1] + (Math.random() - 0.5) * 0.4;
+            pos[i * 3 + 2] = c[2] + (Math.random() - 0.5) * 1.5;
+            col[i * 3] = letterCols[i * 3]; col[i * 3 + 1] = letterCols[i * 3 + 1]; col[i * 3 + 2] = letterCols[i * 3 + 2];
+        } else {
+            const u = Math.random() * 2 - 1, th = Math.random() * Math.PI * 2, s = Math.sqrt(1 - u * u);
+            const r = 20 + Math.random() * 60;
+            pos[i * 3] = r * s * Math.cos(th); pos[i * 3 + 1] = r * s * Math.sin(th); pos[i * 3 + 2] = r * u;
+            col[i * 3] = bubbleCols[i * 3]; col[i * 3 + 1] = bubbleCols[i * 3 + 1]; col[i * 3 + 2] = bubbleCols[i * 3 + 2];
+        }
+    }
+    return { pos, col };
+}
+
+// Tulip (lola): three cupped petals, a straight stem and two long leaves
+function flowerTulipPositionsOld() {
+    const out = new Float32Array(particleCount * 3);
+    const petalN = Math.floor(particleCount * 0.6);
+    const stemN = Math.floor(particleCount * 0.12);
+    for (let i = 0; i < particleCount; i++) {
+        if (i < petalN) {
+            const k = Math.floor(Math.random() * 3) - 1;      // -1 left, 0 middle, 1 right
+            const u = Math.random() * 2 - 1;
+            const t = Math.random();
+            const w = (k === 0 ? 8 : 6) * Math.sin(Math.PI * Math.pow(t, 0.6)) * (1 - 0.15 * t);
+            const cx = k * 4.5 + k * t * 3;                   // side petals lean outward
+            const top = k === 0 ? 24 : 19;
+            out[i * 3] = cx + u * w;
+            out[i * 3 + 1] = 18 + t * top;
+            out[i * 3 + 2] = (1 - Math.abs(u)) * 3 * (k === 0 ? 1 : 0.6) + (Math.random() - 0.5);
+        } else if (i < petalN + stemN) {
+            const t = Math.random();
+            out[i * 3] = Math.sin(t * 2.5) * 1.5;
+            out[i * 3 + 1] = 17 - t * 59;
+            out[i * 3 + 2] = (Math.random() - 0.5) * 1.5;
+        } else {
+            const s = Math.random();
+            const side = Math.random() < 0.5 ? 1 : -1;
+            const wob = (Math.random() - 0.5) * Math.sin(s * Math.PI) * 2.2;
+            out[i * 3] = side * s * 24;
+            out[i * 3 + 1] = -10 + 14 * Math.sin(s * Math.PI * 0.9) * (0.4 + 0.6 * s) + wob;
+            out[i * 3 + 2] = (Math.random() - 0.5) * 1.5;
+        }
+    }
+    return out;
+}
+function flowerTulipColorsOld() {
+    const petalCols = colorsFromList([0xff4f8b, 0xff2e6e, 0xff7fb0, 0xffb3d1]);
+    const leafCols = colorsFromList([0x33cc77, 0x66ff99, 0x118844]);
+    const petalN = Math.floor(particleCount * 0.6);
+    const stemN = Math.floor(particleCount * 0.12);
+    const out = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++) {
+        const src = i < petalN ? petalCols : leafCols;
+        out[i * 3] = src[i * 3]; out[i * 3 + 1] = src[i * 3 + 1]; out[i * 3 + 2] = src[i * 3 + 2];
+    }
+    return out;
+}
+
+// 3D tulip: six petals forming a cup (outer and inner rings), volumetric stem, broad leaves
+function flowerTulipPositions() {
+    const out = new Float32Array(particleCount * 3);
+    const petalN = Math.floor(particleCount * 0.62);
+    const stemN = Math.floor(particleCount * 0.1);
+    for (let i = 0; i < particleCount; i++) {
+        if (i < petalN) {
+            const k = Math.floor(Math.random() * 6);
+            const inner = k >= 3;
+            const phi = ((k % 3) * 2 * Math.PI) / 3 + (inner ? Math.PI / 3 : 0) + (Math.random() - 0.5) * 0.25;
+            const t = Math.random();
+            const u = Math.random() * 2 - 1;
+            const w = (inner ? 4.2 : 5.8) * Math.sin(Math.PI * (0.1 + 0.9 * t) * 0.9) * (0.45 + 0.55 * t);
+            const lateral = u * w;
+            const depth = (inner ? 1.5 : 3.0) + 4.5 * Math.pow(t, 1.3) + (1 - u * u) * (inner ? 1.0 : 2.0) * t;
+            const y = 17 + t * 24 - (inner ? 2 : 0) * (1 - t);
+            out[i * 3] = lateral * Math.cos(phi) + depth * Math.sin(phi);
+            out[i * 3 + 1] = y;
+            out[i * 3 + 2] = -lateral * Math.sin(phi) + depth * Math.cos(phi);
+        } else if (i < petalN + stemN) {
+            const t = Math.random();
+            const th = Math.random() * Math.PI * 2;
+            const r = 0.7 * Math.sqrt(Math.random());
+            out[i * 3] = Math.cos(th) * r + Math.sin(t * 2.5) * 1.2;
+            out[i * 3 + 1] = 17 - t * 58;
+            out[i * 3 + 2] = Math.sin(th) * r;
+        } else {
+            // broad leaves: a surface with width, curving forward in depth
+            const s = Math.random();
+            const side = Math.random() < 0.5 ? 1 : -1;
+            const u = Math.random() * 2 - 1;
+            const wl = 4.8 * Math.sin(Math.PI * Math.pow(s, 0.8)) * (1 - 0.2 * s);
+            const cx = side * s * 22;
+            const cy = -8 + 16 * Math.sin(s * Math.PI * 0.5) * (1 - 0.15 * s);
+            const cz = side * s * 4;
+            out[i * 3] = cx + u * wl * 0.3;
+            out[i * 3 + 1] = cy + u * wl * 0.3;
+            out[i * 3 + 2] = cz + u * wl * 0.9 + (Math.random() - 0.5) * 0.6;
+        }
+    }
+    return out;
+}
+function flowerTulipColors() {
+    const outerCols = colorsFromList([0xff3d7f, 0xff2e6e, 0xff6fa0]);
+    const innerCols = colorsFromList([0xffb3d1, 0xffd1e6, 0xfff0f6]);
+    const leafCols = colorsFromList([0x2e9e5a, 0x44c27a, 0x1a7a44]);
+    const petalN = Math.floor(particleCount * 0.62);
+    const stemN = Math.floor(particleCount * 0.1);
+    const out = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++) {
+        let src;
+        if (i < petalN) src = Math.random() < 0.7 ? outerCols : innerCols;
+        else if (i < petalN + stemN) src = leafCols;
+        else src = leafCols;
+        out[i * 3] = src[i * 3]; out[i * 3 + 1] = src[i * 3 + 1]; out[i * 3 + 2] = src[i * 3 + 2];
+    }
+    return out;
+}
+
+function flowerPositionsV3() {
+    const out = new Float32Array(particleCount * 3);
+    const petalN = Math.floor(particleCount * 0.55);
+    const coreN = Math.floor(particleCount * 0.2);
+    const stemN = Math.floor(particleCount * 0.12);
+    for (let i = 0; i < particleCount; i++) {
+        if (i < petalN) {
+            // five soft petals fanning out from the head, cupped toward the viewer
+            const k = Math.floor(Math.random() * 5);
+            const spread = (Math.random() - 0.5) * 0.9;
+            const a = (k * 2 * Math.PI) / 5 - Math.PI / 2 + spread;
+            const t = Math.random();
+            const rad = 2 + 18 * Math.sqrt(t) * (0.8 + 0.2 * Math.cos(spread * 2));
+            out[i * 3] = Math.cos(a) * rad;
+            out[i * 3 + 1] = 26 + Math.sin(a) * rad * 0.9;
+            out[i * 3 + 2] = (1 - t) * 5 + (Math.random() - 0.5) * 1.5;
+        } else if (i < petalN + coreN) {
+            // tight golden core
+            const th = Math.random() * Math.PI * 2;
+            const rad = 3.5 * Math.sqrt(Math.random());
+            out[i * 3] = Math.cos(th) * rad;
+            out[i * 3 + 1] = 26 + Math.sin(th) * rad;
+            out[i * 3 + 2] = 6 + (Math.random() - 0.5) * 1.5;
+        } else if (i < petalN + coreN + stemN) {
+            // gently curved stem
+            const t = Math.random();
+            out[i * 3] = Math.sin(t * 3) * 2.5 * t;
+            out[i * 3 + 1] = 20 - t * 62;
+            out[i * 3 + 2] = (Math.random() - 0.5) * 2;
+        } else {
+            // two leaves branching from the stem
+            const s = Math.random();
+            const side = Math.random() < 0.5 ? 1 : -1;
+            const wob = (Math.random() - 0.5) * Math.sin(s * Math.PI) * 4;
+            out[i * 3] = side * s * 18;
+            out[i * 3 + 1] = -6 + 10 * Math.sin(s * Math.PI) * (0.5 + 0.5 * s) + wob;
+            out[i * 3 + 2] = (Math.random() - 0.5) * 2;
+        }
+    }
+    return out;
+}
+function flowerColorsV3() {
+    const petalCols = colorsFromList([0xff7fbf, 0xffb3d9, 0xffd1e8, 0xff4fa0, 0xfff0f6]);
+    const coreCols = colorsFromList([0xffe8a3, 0xffd27a, 0xfff4c2]);
+    const leafCols = colorsFromList([0x33cc77, 0x66ff99, 0x118844]);
+    const petalN = Math.floor(particleCount * 0.55);
+    const coreN = Math.floor(particleCount * 0.2);
+    const stemN = Math.floor(particleCount * 0.12);
+    const out = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++) {
+        let src;
+        if (i < petalN) src = petalCols;
+        else if (i < petalN + coreN) src = coreCols;
+        else src = leafCols;
+        out[i * 3] = src[i * 3]; out[i * 3 + 1] = src[i * 3 + 1]; out[i * 3 + 2] = src[i * 3 + 2];
+    }
+    return out;
+}
+
+function flowerColorsOld() {
+    const head = colorsFromPalette(4), stem = colorsFromPalette(2);
+    const headCount = Math.floor(particleCount * 0.8);
+    const out = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++) {
+        const src = i < headCount ? head : stem;
+        out[i * 3] = src[i * 3]; out[i * 3 + 1] = src[i * 3 + 1]; out[i * 3 + 2] = src[i * 3 + 2];
+    }
+    return out;
+}
+
+// Draw something on an offscreen canvas and sample the lit pixels as points
+function samplePoints(draw) {
+    const W = 900, H = 500;
+    const c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    const g = c.getContext('2d');
+    g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
+    g.fillStyle = '#fff'; g.strokeStyle = '#fff';
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    draw(g);
+    const d = g.getImageData(0, 0, W, H).data;
+    const lit = (x, y) => x >= 0 && y >= 0 && x < W && y < H && d[(y * W + x) * 4] > 128;
+    const pts = [];
+    for (let y = 0; y < H; y += 2) {
+        for (let x = 0; x < W; x += 2) {
+            if (!lit(x, y)) continue;
+            // keep only outline pixels so letters read as sparkling strokes, not a blob
+            const edge = !lit(x + 5, y) || !lit(x - 5, y) || !lit(x, y + 5) || !lit(x, y - 5);
+            if (edge) pts.push([(x - W / 2) * TEXT_SCALE, -(y - H / 2) * TEXT_SCALE]);
+        }
+    }
+    if (pts.length === 0) pts.push([0, 0]);
+    return pts;
+}
+function positionsFromPoints(pts) {
+    const out = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++) {
+        const p = pts[Math.floor(Math.random() * pts.length)];
+        out[i * 3] = p[0] + (Math.random() - 0.5) * 0.3;
+        out[i * 3 + 1] = p[1] + (Math.random() - 0.5) * 0.3;
+        out[i * 3 + 2] = (Math.random() - 0.5) * 3;
+    }
+    return out;
+}
+
+function envelopePositions() {
+    return positionsFromPoints(samplePoints((g) => {
+        g.lineWidth = 7;
+        g.strokeRect(150, 90, 600, 320);
+        g.beginPath(); g.moveTo(150, 90); g.lineTo(450, 260); g.lineTo(750, 90); g.stroke();
+        g.beginPath(); g.moveTo(150, 410); g.lineTo(330, 290); g.moveTo(750, 410); g.lineTo(570, 290); g.stroke();
+        g.font = 'bold 84px Arial, sans-serif'; g.fillText('FOR YOU', 450, 350);
+        g.font = '60px Arial, sans-serif'; g.fillText('♥', 450, 240);
+    }));
+}
+function textPositions(main, small, size = 150) {
+    return positionsFromPoints(samplePoints((g) => {
+        if (small) { g.font = `italic 46px ${SCRIPT_FONT}`; g.fillText(small, 450, 190); }
+        g.font = `italic ${size}px ${SCRIPT_FONT}`; g.fillText(main, 450, 300);
+    }));
+}
+function burstPositions() {
+    const out = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++) {
+        const u = Math.random() * 2 - 1, th = Math.random() * Math.PI * 2, s = Math.sqrt(1 - u * u);
+        const r = 20 + Math.random() * 60;
+        out[i * 3] = r * s * Math.cos(th); out[i * 3 + 1] = r * s * Math.sin(th); out[i * 3 + 2] = r * u;
+    }
+    return out;
+}
+function patternPositions(fn) {
+    const out = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++) { const p = fn(i, particleCount); out[i * 3] = p.x; out[i * 3 + 1] = p.y; out[i * 3 + 2] = p.z; }
+    return out;
+}
+function heartPositions() {
+    const out = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++) {
+        const t = Math.random() * Math.PI * 2;
+        const k = Math.random() < 0.35 ? 1 : Math.sqrt(Math.random());
+        const hx = 16 * Math.pow(Math.sin(t), 3);
+        const hy = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+        out[i * 3] = hx * k * 1.6;
+        out[i * 3 + 1] = (hy * k - 2) * 1.6;
+        out[i * 3 + 2] = (1 - k) * 6 + (Math.random() - 0.5) * 1.2;
+    }
+    return out;
+}
+function flowerPositionsOld() {
+    const out = new Float32Array(particleCount * 3);
+    const headCount = Math.floor(particleCount * 0.8);
+    for (let i = 0; i < particleCount; i++) {
+        if (i < headCount) {
+            const th = Math.random() * Math.PI * 2;
+            const petal = Math.abs(Math.cos(2.5 * th));
+            const rad = (6 + 14 * petal) * Math.sqrt(Math.random());
+            out[i * 3] = Math.cos(th) * rad;
+            out[i * 3 + 1] = 26 + Math.sin(th) * rad * 0.9;
+            out[i * 3 + 2] = (Math.random() - 0.5) * 8;
+        } else {
+            const t = Math.random();
+            out[i * 3] = Math.sin(t * 6) * 1.2;
+            out[i * 3 + 1] = 20 - t * 60;
+            out[i * 3 + 2] = (Math.random() - 0.5) * 2;
+        }
+    }
+    return out;
+}
+
+const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+let lastBuild = null;
+
+// Combine several sampled point groups into one particle buffer, each with its own colors
+function buildLayered(groups) {
+    const pos = new Float32Array(particleCount * 3);
+    const col = new Float32Array(particleCount * 3);
+    let start = 0;
+    groups.forEach((gr, gi) => {
+        const end = gi === groups.length - 1 ? particleCount : start + Math.floor(particleCount * gr.share);
+        const cols = colorsFromList(gr.colors);
+        for (let i = start; i < end; i++) {
+            const p = gr.pts[Math.floor(Math.random() * gr.pts.length)];
+            pos[i * 3] = p[0] + (Math.random() - 0.5) * 0.3;
+            pos[i * 3 + 1] = p[1] + (Math.random() - 0.5) * 0.3;
+            pos[i * 3 + 2] = (Math.random() - 0.5) * 3;
+            col[i * 3] = cols[i * 3]; col[i * 3 + 1] = cols[i * 3 + 1]; col[i * 3 + 2] = cols[i * 3 + 2];
+        }
+        start = end;
+    });
+    return { pos, col };
+}
+
+// Closed envelope: gold outline, ivory "FOR YOU" so it stands out slightly from the gold
+function idleEnvelopeData() {
+    const shape = samplePoints((g) => {
+        g.lineWidth = 7;
+        g.strokeRect(150, 90, 600, 320);
+        g.beginPath(); g.moveTo(150, 90); g.lineTo(450, 260); g.lineTo(750, 90); g.stroke();
+        g.beginPath(); g.moveTo(150, 410); g.lineTo(330, 290); g.moveTo(750, 410); g.lineTo(570, 290); g.stroke();
+    });
+    const words = samplePoints((g) => {
+        g.font = 'bold 84px Arial, sans-serif'; g.fillText('FOR YOU', 450, 350);
+        g.font = '60px Arial, sans-serif'; g.fillText('♥', 450, 240);
+    });
+    return buildLayered([
+        { pts: shape, share: 0.7, colors: GOLD_COLORS },
+        { pts: words, share: 1, colors: [0xfffff0, 0xfffdf0, 0xf8f4e3] }
+    ]);
+}
+
+// Envelope flap lifts upward from the bottom edge when OPEN is pressed
+function openEnvelopeData() {
+    const pts = samplePoints((g) => {
+        g.lineWidth = 7;
+        g.strokeRect(150, 200, 600, 210);
+        g.beginPath(); g.moveTo(150, 200); g.lineTo(450, 40); g.lineTo(750, 200); g.stroke();
+        g.beginPath(); g.moveTo(150, 410); g.lineTo(330, 290); g.moveTo(750, 410); g.lineTo(570, 290); g.stroke();
+    });
+    return buildLayered([{ pts, share: 1, colors: GOLD_COLORS }]);
+}
+
+// Filled, larger alphabet sampled as points (every lit pixel, so letters read clearly)
+function alphabetPoints() {
+    const W = 900, H = 500, S = TEXT_SCALE * 1.6;
+    const c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    const g = c.getContext('2d');
+    g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
+    g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.font = 'bold 110px Arial, sans-serif';
+    for (let i = 0; i < ALPHABET.length; i++) {
+        g.fillText(ALPHABET[i], 90 + (i % 9) * 95, 110 + Math.floor(i / 9) * 150);
+    }
+    const d = g.getImageData(0, 0, W, H).data;
+    const pts = [];
+    for (let y = 0; y < H; y += 3) {
+        for (let x = 0; x < W; x += 3) {
+            if (d[(y * W + x) * 4] > 128) pts.push([(x - W / 2) * S, -(y - H / 2) * S]);
+        }
+    }
+    if (pts.length === 0) pts.push([0, 0]);
+    return pts;
+}
+
+// Alphabet letters scattered in depth mixed with the bubble sphere
+function alphabetBurstData() {
+    const glyph = alphabetPoints();
+    const letterCols = colorsFromList(TEXT_COLORS);
+    const bubbleCols = colorsFromPalette(4);
+    const pos = new Float32Array(particleCount * 3);
+    const col = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++) {
+        if (Math.random() < 0.5) {
+            const p = glyph[Math.floor(Math.random() * glyph.length)];
+            pos[i * 3] = p[0] + (Math.random() - 0.5) * 3;
+            pos[i * 3 + 1] = p[1] + (Math.random() - 0.5) * 3;
+            pos[i * 3 + 2] = (Math.random() - 0.5) * 140;
+            col[i * 3] = letterCols[i * 3]; col[i * 3 + 1] = letterCols[i * 3 + 1]; col[i * 3 + 2] = letterCols[i * 3 + 2];
+        } else {
+            const u = Math.random() * 2 - 1, th = Math.random() * Math.PI * 2, s = Math.sqrt(1 - u * u);
+            const r = 20 + Math.random() * 60;
+            pos[i * 3] = r * s * Math.cos(th); pos[i * 3 + 1] = r * s * Math.sin(th); pos[i * 3 + 2] = r * u;
+            col[i * 3] = bubbleCols[i * 3]; col[i * 3 + 1] = bubbleCols[i * 3 + 1]; col[i * 3 + 2] = bubbleCols[i * 3 + 2];
+        }
+    }
+    return { pos, col };
+}
+
+// Layered flower: dome-shaped 5-petal head, pink/white petals, stem and two leaves
+function flowerPositions() {
+    const out = new Float32Array(particleCount * 3);
+    const head = Math.floor(particleCount * 0.6);
+    const stem = Math.floor(particleCount * 0.2);
+    for (let i = 0; i < particleCount; i++) {
+        if (i < head) {
+            const th = Math.random() * Math.PI * 2;
+            const petal = Math.pow(Math.abs(Math.cos(2.5 * th)), 0.5);
+            const rad = (5 + 17 * petal) * Math.sqrt(Math.random());
+            out[i * 3] = Math.cos(th) * rad;
+            out[i * 3 + 1] = 26 + Math.sin(th) * rad * 0.95;
+            out[i * 3 + 2] = (1 - rad / 24) * 6 + (Math.random() - 0.5) * 2;
+        } else if (i < head + stem) {
+            const t = Math.random();
+            out[i * 3] = Math.sin(t * 6) * 1.2;
+            out[i * 3 + 1] = 20 - t * 60;
+            out[i * 3 + 2] = (Math.random() - 0.5) * 2;
+        } else {
+            const s = Math.random();
+            const side = Math.random() < 0.5 ? 1 : -1;
+            const wob = (Math.random() - 0.5) * Math.sin(s * Math.PI) * 5;
+            out[i * 3] = side * s * 16;
+            out[i * 3 + 1] = -4 + 7 * Math.sin(s * Math.PI) * 0.6 + wob;
+            out[i * 3 + 2] = (Math.random() - 0.5) * 2;
+        }
+    }
+    return out;
+}
+function flowerColors() {
+    const headCols = colorsFromList([0xff7fbf, 0xffb3d9, 0xfff0f6, 0xff4fa0]);
+    const stemCols = colorsFromList([0x33cc77, 0x66ff99, 0x118844]);
+    const head = Math.floor(particleCount * 0.6);
+    const stem = Math.floor(particleCount * 0.2);
+    const out = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++) {
+        const src = i < head ? headCols : stemCols;
+        out[i * 3] = src[i * 3]; out[i * 3 + 1] = src[i * 3 + 1]; out[i * 3 + 2] = src[i * 3 + 2];
+    }
+    return out;
+}
+
+function applyNow(pos, col) {
+    particles.geometry.attributes.position.array.set(pos);
+    particles.geometry.attributes.color.array.set(col);
+    particles.geometry.attributes.position.needsUpdate = true;
+    particles.geometry.attributes.color.needsUpdate = true;
+    particles.geometry.userData.currentColors = new Float32Array(col);
+}
+function applySize(v) {
+    const a = particles.geometry.attributes.size;
+    for (let i = 0; i < particleCount; i++) a.array[i] = v * (0.75 + Math.random() * 0.5);
+    a.needsUpdate = true;
+}
+function setIdleShape() { applySize(0.4); const d = idleEnvelopeData(); applyNow(d.pos, d.col); }
+
+function morphTo(pos, col, speed) {
+    particles.userData.fromPositions = new Float32Array(particles.geometry.attributes.position.array);
+    particles.userData.toPositions = pos;
+    particles.userData.fromColors = new Float32Array(particles.geometry.attributes.color.array);
+    particles.userData.toColors = col;
+    particles.userData.targetPattern = currentPattern;
+    transitionSpeed = speed;
+    transitionProgress = 0;
+    isTransitioning = true;
+}
+
+async function runShow() {
+    if (showStarted) return;
+    showStarted = true;
+    showRunning = true;
+    const steps = [
+        { pos: () => (lastBuild = alphabetBurstV2()).pos, col: () => lastBuild.col, size: 0.7, speed: 0.012, hold: 5500 },
+        { pos: () => heartPositions(), col: () => colorsFromPalette(4), size: 1.0, speed: 0.012, hold: 3500 },
+        { pos: () => textPositions('I always chose you', null, 84), col: () => colorsFromList(TEXT_COLORS), size: 0.22, speed: 0.03, hold: 3500 },
+        { pos: () => textPositions('SHABIII'), col: () => colorsFromList(TEXT_COLORS), size: 0.22, speed: 0.06, hold: 3000 },
+        { pos: () => flowerTulipPositions(), col: () => flowerTulipColors(), size: 0.6, speed: 0.015, hold: 6000 },
+        { pos: () => textPositions('SHABIII', 'Sen uchun'), col: () => colorsFromList(TEXT_COLORS), size: 0.4, speed: 0.02, hold: 0 },
+    ];
+    await openEnvelopeAnimated(2000);
+    await sleepMs(400);
+    for (const s of steps) {
+        applySize(s.size);
+        morphTo(s.pos(), s.col(), s.speed);
+        await waitForMorph();
+        await sleepMs(s.hold);
+    }
+}
+window.startShow = runShow;
+
+function startExperience() {
+    init();
+    if (renderer) {
+        setIdleShape();
+        animate();
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startExperience);
+} else {
+    startExperience();
+}
+
+</script>
+</body>
+</html>
